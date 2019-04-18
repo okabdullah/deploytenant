@@ -1,0 +1,368 @@
+tenant:
+  flags:
+    allow_legacy_delegation_grant_types: false
+    allow_legacy_ro_grant_types: false
+    allow_other_legacy_grant_types: false
+  friendly_name: Good Times Inc
+  picture_url: 'https://jwt.io/img/pic_logo.svg'
+  support_email: omar.abdullah@auth0.com
+  support_url: 'https://auth0.com/about'
+rules:
+  - name: Multifactor Authentication
+    script: ./rules/Multifactor Authentication.js
+    stage: login_success
+    enabled: true
+    order: 1
+pages:
+  - name: login
+    enabled: true
+    html: ./pages/login.html
+  - name: password_reset
+    enabled: true
+    html: ./pages/password_reset.html
+resourceServers:
+  - name: Mulesoft API
+    identifier: 'https://mulesoftpai.com'
+    allow_offline_access: false
+    scopes:
+      - value: 'write:user'
+        description: Update and create users
+      - value: 'read:user'
+        description: Read your users
+    signing_alg: RS256
+    skip_consent_for_verifiable_first_party_clients: true
+    token_lifetime: 86400
+    token_lifetime_for_web: 7200
+clients:
+  - name: AD RMS
+    addons:
+      rms:
+        url: 'https://rights-management-server.com'
+    app_type: rms
+    callbacks: []
+    cross_origin_auth: false
+    custom_login_page_on: true
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    oidc_conformant: false
+    sso_disabled: false
+  - name: Affinix
+    allowed_clients: []
+    allowed_logout_urls: []
+    allowed_origins: []
+    app_type: spa
+    callbacks: []
+    cross_origin_auth: false
+    custom_login_page_on: true
+    description: ''
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    logo_uri: ''
+    oidc_conformant: true
+    sso: true
+    sso_disabled: false
+    token_endpoint_auth_method: none
+    web_origins: []
+  - name: Default App
+    allowed_clients: null
+    allowed_logout_urls: null
+    allowed_origins: null
+    callbacks: null
+    custom_login_page_on: false
+    grant_types:
+      - implicit
+      - authorization_code
+      - client_credentials
+      - refresh_token
+    is_first_party: true
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    oidc_conformant: true
+  - name: Montage
+    allowed_clients: []
+    allowed_logout_urls: []
+    allowed_origins: []
+    app_type: spa
+    callbacks: []
+    cross_origin_auth: false
+    custom_login_page_on: true
+    description: ''
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    logo_uri: ''
+    oidc_conformant: true
+    sso: true
+    sso_disabled: false
+    token_endpoint_auth_method: none
+    web_origins: []
+  - name: Mulesoft API (Test Application)
+    app_type: non_interactive
+    cross_origin_auth: false
+    custom_login_page_on: true
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    oidc_conformant: false
+    sso_disabled: false
+  - name: Office365ForDemo
+    addons:
+      office365:
+        domain: your-office365-domain.com
+    app_type: office365
+    callbacks: []
+    cross_origin_auth: false
+    custom_login_page_on: true
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    oidc_conformant: false
+    sso_disabled: false
+  - name: auth0-deploy-cli-extension
+    cross_origin_auth: false
+    custom_login_page_on: true
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    oidc_conformant: true
+    sso_disabled: false
+  - name: auth0-github-deploy
+    cross_origin_auth: false
+    custom_login_page_on: true
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    oidc_conformant: true
+    sso_disabled: false
+databases:
+  - name: GoldClubMembers
+    strategy: auth0
+    enabled_clients:
+      - auth0-deploy-cli-extension
+      - auth0-github-deploy
+      - Montage
+      - Affinix
+    is_domain_connection: false
+    options:
+      mfa:
+        active: true
+        return_enroll_settings: true
+      passwordPolicy: good
+      disable_signup: false
+      requires_username: false
+      brute_force_protection: true
+      strategy_version: 2
+    realms:
+      - GoldClubMembers
+  - name: Username-Password-Authentication
+    strategy: auth0
+    enabled_clients:
+      - auth0-deploy-cli-extension
+      - AD RMS
+      - auth0-github-deploy
+      - Montage
+      - Mulesoft API (Test Application)
+      - Affinix
+      - Office365ForDemo
+    is_domain_connection: false
+    options:
+      mfa:
+        active: true
+        return_enroll_settings: true
+      passwordPolicy: good
+      brute_force_protection: true
+      strategy_version: 2
+      requires_username: false
+      validation:
+        username:
+          min: 1
+          max: 15
+      password_history:
+        enable: true
+        size: 9
+      password_dictionary:
+        enable: true
+      password_no_personal_info:
+        enable: true
+      password_complexity_options:
+        min_length: 8
+    realms:
+      - Username-Password-Authentication
+connections:
+  - name: IPConn
+    strategy: ip
+    enabled_clients:
+      - auth0-deploy-cli-extension
+      - auth0-github-deploy
+      - Montage
+      - Default App
+    is_domain_connection: false
+    options:
+      domain_aliases: []
+      tenant_domain: null
+      range:
+        - 24.17.197.130/32
+        - 172.25.1.60/32
+      username: ipuser
+  - name: google-oauth2
+    strategy: google-oauth2
+    enabled_clients:
+      - auth0-deploy-cli-extension
+      - auth0-github-deploy
+      - Mulesoft API (Test Application)
+      - Office365ForDemo
+    is_domain_connection: false
+    options:
+      email: true
+      profile: true
+      scope:
+        - email
+        - profile
+      client_id: ''
+      allowed_audiences: []
+      contacts: false
+      blogger: false
+      calendar: false
+      gmail: false
+      google_plus: false
+      orkut: false
+      picasa_web: false
+      tasks: false
+      youtube: false
+      adsense_management: false
+      google_affiliate_network: false
+      analytics: false
+      google_books: false
+      google_cloud_storage: false
+      content_api_for_shopping: false
+      chrome_web_store: false
+      document_list: false
+      google_drive: false
+      google_drive_files: false
+      latitude_best: false
+      latitude_city: false
+      moderator: false
+      sites: false
+      spreadsheets: false
+      url_shortener: false
+      webmaster_tools: false
+      coordinate: false
+      coordinate_readonly: false
+rulesConfigs: []
+emailProvider: {}
+emailTemplates: []
+clientGrants:
+  - client_id: Mulesoft API (Test Application)
+    audience: 'https://mulesoftpai.com'
+    scope: []
+  - client_id: auth0-github-deploy
+    audience: 'https://omarclassic.auth0.com/api/v2/'
+    scope:
+      - 'read:client_grants'
+      - 'create:client_grants'
+      - 'delete:client_grants'
+      - 'update:client_grants'
+      - 'read:clients'
+      - 'update:clients'
+      - 'delete:clients'
+      - 'create:clients'
+      - 'read:client_keys'
+      - 'update:client_keys'
+      - 'delete:client_keys'
+      - 'create:client_keys'
+      - 'read:connections'
+      - 'update:connections'
+      - 'delete:connections'
+      - 'create:connections'
+      - 'read:resource_servers'
+      - 'update:resource_servers'
+      - 'delete:resource_servers'
+      - 'create:resource_servers'
+      - 'read:rules'
+      - 'update:rules'
+      - 'delete:rules'
+      - 'create:rules'
+      - 'read:rules_configs'
+      - 'update:rules_configs'
+      - 'delete:rules_configs'
+      - 'read:email_provider'
+      - 'update:email_provider'
+      - 'delete:email_provider'
+      - 'create:email_provider'
+      - 'read:tenant_settings'
+      - 'update:tenant_settings'
+      - 'read:grants'
+      - 'delete:grants'
+      - 'read:guardian_factors'
+      - 'update:guardian_factors'
+      - 'read:email_templates'
+      - 'create:email_templates'
+      - 'update:email_templates'
+guardianFactors:
+  - name: duo
+    enabled: true
+  - name: email
+    enabled: false
+  - name: otp
+    enabled: true
+  - name: push-notification
+    enabled: true
+  - name: sms
+    enabled: true
+guardianFactorProviders: []
+guardianFactorTemplates: []
