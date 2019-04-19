@@ -1801,7 +1801,7 @@ rulesConfigs: []
 emailProvider:
   name: sendgrid
   credentials:
-    api_key: [!cipher]f8c13dcab24f728570d0c449d457eeefb3b97063f3f61aa12c0ae9379f26dcb82f461ce088566c9968a002b02f4527a325c362d06ccb94fb00c93db0c36923d9414404e7d958d97597c9ab1f6de093be5a33cd611d59f32e7642f52d265b89db63aaf79195-25edc2d21fb2cfc8f9de59b062e748010971dfea53880fe9[rehpic!]
+    api_key: "[!cipher]f8c13dcab24f728570d0c449d457eeefb3b97063f3f61aa12c0ae9379f26dcb82f461ce088566c9968a002b02f4527a325c362d06ccb94fb00c93db0c36923d9414404e7d958d97597c9ab1f6de093be5a33cd611d59f32e7642f52d265b89db63aaf79195-25edc2d21fb2cfc8f9de59b062e748010971dfea53880fe9[rehpic!]"
   default_from_address: OmarSPA<admin@omarspa.auth0.com>
   enabled: true
 emailTemplates:
