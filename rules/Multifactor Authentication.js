@@ -6,10 +6,13 @@ function (user, context, callback) {
   2. User metadata:
   user.user_metadata.use_mfa
   */
-
+  user.app_metadata = user.app_metadata || {};
+  //user.app_metadata.mfatype = user.app_metadata || "any";
+  var mfafactor =  user.app_metadata.mfatype || "any";
+  console.log (mfafactor);
   // if (<condition>) {
     context.multifactor = {
-      provider: 'any',
+      provider: mfafactor, //user.app_metadata.mfatype,//"any",//user.app_metadata.mfatype,//'any',
 
       // optional, defaults to true. Set to false to force authentication every time.
       // See https://auth0.com/docs/multifactor-authentication/custom#change-the-frequency-of-authentication-requests for details

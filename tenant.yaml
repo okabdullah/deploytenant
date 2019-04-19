@@ -1,19 +1,76 @@
 tenant:
+  default_audience: ''
+  default_directory: Username-Password-Authentication
   flags:
+    enable_client_connections: false
+    enable_dynamic_client_registration: true
     allow_legacy_delegation_grant_types: false
     allow_legacy_ro_grant_types: false
     allow_other_legacy_grant_types: false
-  friendly_name: Good Times Inc
+    universal_login: false
+  friendly_name: Seamless inc.
+  idle_session_lifetime: 0.03333333333333333
   picture_url: 'https://jwt.io/img/pic_logo.svg'
+  session_lifetime: 168
   support_email: omar.abdullah@auth0.com
   support_url: 'https://auth0.com/about'
+  universal_login:
+    colors:
+      primary: '#008080'
+      page_background: '#000000'
 rules:
+  - name: Add persistent attributes to the user
+    script: ./rules/Add persistent attributes to the user.js
+    stage: login_success
+    enabled: true
+    order: 9
+  - name: Adding custom claims to id token
+    script: ./rules/Adding custom claims to id token.js
+    stage: login_success
+    enabled: true
+    order: 3
+  - name: Logging rule
+    script: ./rules/Logging rule.js
+    stage: login_success
+    enabled: true
+    order: 7
   - name: Multifactor Authentication
     script: ./rules/Multifactor Authentication.js
     stage: login_success
-    enabled: true
+    enabled: false
+    order: 5
+  - name: Require MFA once per session
+    script: ./rules/Require MFA once per session.js
+    stage: login_success
+    enabled: false
+    order: 10
+  - name: Whitelist on the cloud
+    script: ./rules/Whitelist on the cloud.js
+    stage: login_success
+    enabled: false
     order: 1
+  - name: auth0-account-link-extension
+    script: ./rules/auth0-account-link-extension.js
+    stage: login_success
+    enabled: false
+    order: 6
+  - name: auth0-authorization-extension
+    script: ./rules/auth0-authorization-extension.js
+    stage: login_success
+    enabled: false
+    order: 4
+  - name: rule-map-email-to-nameid
+    script: ./rules/rule-map-email-to-nameid.js
+    stage: login_success
+    enabled: false
+    order: 8
 pages:
+  - name: error_page
+    html: ./pages/error_page.html
+    url: 'https://auth0.com/error'
+  - name: guardian_multifactor
+    enabled: true
+    html: ./pages/guardian_multifactor.html
   - name: login
     enabled: true
     html: ./pages/login.html
@@ -21,25 +78,79 @@ pages:
     enabled: true
     html: ./pages/password_reset.html
 resourceServers:
-  - name: Mulesoft API
-    identifier: 'https://mulesoftpai.com'
+  - name: ' Organizer Service'
+    identifier: organize
     allow_offline_access: false
     scopes:
-      - value: 'write:user'
-        description: Update and create users
-      - value: 'read:user'
-        description: Read your users
+      - value: 'read:calendar'
+        description: Read your calendar
+      - value: 'read:contacts'
+        description: Read your contacts
     signing_alg: RS256
     skip_consent_for_verifiable_first_party_clients: true
     token_lifetime: 86400
     token_lifetime_for_web: 7200
+  - name: Expenses API
+    identifier: 'https://expenses-api'
+    allow_offline_access: true
+    scopes:
+      - value: 'read:reports'
+        description: Read users reports.
+    signing_alg: RS256
+    skip_consent_for_verifiable_first_party_clients: true
+    token_lifetime: 86400
+    token_lifetime_for_web: 7200
+  - name: MFAROPG
+    identifier: 'https://mfaropg'
+    allow_offline_access: false
+    signing_alg: RS256
+    skip_consent_for_verifiable_first_party_clients: true
+    token_lifetime: 86400
+    token_lifetime_for_web: 7200
+  - name: SCIM20toAuth0
+    identifier: 'http://localhost:8080/scim/users'
+    allow_offline_access: false
+    enforce_policies: true
+    scopes:
+      - value: 'read:users'
+        description: Read your users
+    signing_alg: RS256
+    skip_consent_for_verifiable_first_party_clients: true
+    token_dialect: access_token_authz
+    token_lifetime: 86400
+    token_lifetime_for_web: 7200
+  - name: auth0-authorization-extension-api
+    identifier: 'urn:auth0-authz-api'
+    allow_offline_access: false
+    scopes:
+      - value: 'read:users'
+      - value: 'read:applications'
+      - value: 'read:connections'
+      - value: 'read:configuration'
+      - value: 'update:configuration'
+      - value: 'read:groups'
+      - value: 'create:groups'
+      - value: 'update:groups'
+      - value: 'delete:groups'
+      - value: 'read:roles'
+      - value: 'create:roles'
+      - value: 'update:roles'
+      - value: 'delete:roles'
+      - value: 'read:permissions'
+      - value: 'create:permissions'
+      - value: 'update:permissions'
+      - value: 'delete:permissions'
+      - value: 'read:resource-server'
+      - value: 'create:resource-server'
+      - value: 'update:resource-server'
+      - value: 'delete:resource-server'
+    signing_alg: RS256
+    skip_consent_for_verifiable_first_party_clients: false
+    token_lifetime: 86400
+    token_lifetime_for_web: 7200
 clients:
-  - name: AD RMS
-    addons:
-      rms:
-        url: 'https://rights-management-server.com'
-    app_type: rms
-    callbacks: []
+  - name: ' Organizer Service (Test Application)'
+    app_type: non_interactive
     cross_origin_auth: false
     custom_login_page_on: true
     grant_types:
@@ -54,12 +165,31 @@ clients:
       secret_encoded: false
     oidc_conformant: false
     sso_disabled: false
-  - name: Affinix
+  - name: API Explorer Application
+    app_type: non_interactive
+    cross_origin_auth: false
+    custom_login_page_on: true
+    description: Test Application for API Explorer.
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    oidc_conformant: false
+    sso_disabled: false
+  - name: Account Linking SPA
     allowed_clients: []
     allowed_logout_urls: []
     allowed_origins: []
     app_type: spa
-    callbacks: []
+    callbacks:
+      - 'http://localhost:3333'
+      - 'http://localhost:5000/'
     cross_origin_auth: false
     custom_login_page_on: true
     description: ''
@@ -75,10 +205,44 @@ clients:
       secret_encoded: false
     logo_uri: ''
     oidc_conformant: true
-    sso: true
+    sso: false
     sso_disabled: false
     token_endpoint_auth_method: none
     web_origins: []
+  - name: AuthZExtensionapp
+    app_type: non_interactive
+    cross_origin_auth: false
+    custom_login_page_on: true
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    oidc_conformant: true
+    sso_disabled: false
+  - name: DashboardAdmin
+    app_type: regular_web
+    cross_origin_auth: false
+    custom_login_page_on: true
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    oidc_conformant: true
+    sso_disabled: false
   - name: Default App
     allowed_clients: null
     allowed_logout_urls: null
@@ -96,12 +260,367 @@ clients:
       lifetime_in_seconds: 36000
       secret_encoded: false
     oidc_conformant: true
+  - name: DesktopApp
+    app_type: native
+    cross_origin_auth: false
+    custom_login_page_on: true
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    oidc_conformant: true
+    sso_disabled: false
+    token_endpoint_auth_method: none
+  - name: Expenses API (Test Application)
+    app_type: non_interactive
+    cross_origin_auth: false
+    custom_login_page_on: true
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    oidc_conformant: false
+    sso_disabled: false
+  - name: Identity Labs - Web App
+    allowed_clients: []
+    allowed_logout_urls:
+      - 'http://localhost:3000'
+    allowed_origins: []
+    app_type: regular_web
+    callbacks:
+      - 'http://localhost:3000/callback'
+    cross_origin_auth: false
+    custom_login_page_on: true
+    description: ''
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    logo_uri: ''
+    oidc_conformant: true
+    sso: false
+    sso_disabled: false
+    token_endpoint_auth_method: client_secret_post
+    web_origins: []
+  - name: IdentityLabsMobile
+    allowed_clients: []
+    allowed_logout_urls: []
+    allowed_origins: []
+    app_type: native
+    callbacks:
+      - >-
+        com.auth0.identity102://omarmodern.auth0.com/ios/com.auth0.identity102/callback
+    cross_origin_auth: false
+    custom_login_page_on: true
+    description: ''
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    logo_uri: ''
+    oidc_conformant: true
+    sso: false
+    sso_disabled: false
+    token_endpoint_auth_method: none
+    web_origins: []
+  - name: MFAAPIPOC
+    allowed_clients: []
+    allowed_logout_urls: []
+    allowed_origins: []
+    app_type: non_interactive
+    callbacks: []
+    cross_origin_auth: false
+    custom_login_page_on: true
+    description: ''
+    grant_types:
+      - authorization_code
+      - 'http://auth0.com/oauth/grant-type/mfa-oob'
+      - 'http://auth0.com/oauth/grant-type/mfa-otp'
+      - 'http://auth0.com/oauth/grant-type/mfa-recovery-code'
+      - 'http://auth0.com/oauth/grant-type/password-realm'
+      - implicit
+      - password
+      - refresh_token
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    logo_uri: ''
+    oidc_conformant: true
+    sso: false
+    sso_disabled: false
+    token_endpoint_auth_method: none
+    web_origins: []
+  - name: MFAROPG (Test Application)
+    allowed_clients: []
+    allowed_logout_urls: []
+    allowed_origins: []
+    app_type: non_interactive
+    callbacks: []
+    cross_origin_auth: false
+    custom_login_page_on: true
+    description: ''
+    grant_types:
+      - authorization_code
+      - client_credentials
+      - 'http://auth0.com/oauth/grant-type/mfa-oob'
+      - 'http://auth0.com/oauth/grant-type/mfa-otp'
+      - 'http://auth0.com/oauth/grant-type/mfa-recovery-code'
+      - 'http://auth0.com/oauth/grant-type/password-realm'
+      - implicit
+      - password
+      - refresh_token
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: HS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    logo_uri: ''
+    oidc_conformant: false
+    sso: false
+    sso_disabled: false
+    token_endpoint_auth_method: client_secret_post
+    web_origins: []
+  - name: MachinetoMachineApp
+    app_type: non_interactive
+    cross_origin_auth: false
+    custom_login_page_on: true
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    oidc_conformant: true
+    sso_disabled: false
+  - name: MgmtClientApp
+    app_type: non_interactive
+    cross_origin_auth: false
+    custom_login_page_on: true
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    oidc_conformant: true
+    sso_disabled: false
+  - name: MobileApp
+    app_type: native
+    cross_origin_auth: false
+    custom_login_page_on: true
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    oidc_conformant: true
+    sso_disabled: false
+    token_endpoint_auth_method: none
   - name: Montage
+    allowed_clients: []
+    allowed_logout_urls:
+      - 'http://localhost:5000/logout'
+    allowed_origins: []
+    app_type: regular_web
+    callbacks:
+      - 'http://localhost:5000/callback'
+    cross_origin_auth: false
+    custom_login_page_on: true
+    description: ''
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    initiate_login_uri: 'https://omarmodern.local:5000/login'
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    logo_uri: ''
+    oidc_conformant: true
+    sso: false
+    sso_disabled: false
+    token_endpoint_auth_method: client_secret_post
+    web_origins: []
+  - name: My App
+    allowed_clients: []
+    allowed_logout_urls: []
+    allowed_origins: []
+    app_type: regular_web
+    callbacks: []
+    cross_origin_auth: false
+    custom_login_page_on: true
+    description: ''
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    logo_uri: ''
+    oidc_conformant: true
+    sso: false
+    sso_disabled: false
+    token_endpoint_auth_method: none
+    web_origins: []
+  - name: MySharepointApp
+    addons:
+      sharepoint:
+        url: 'http://sp-server:9898'
+        external_url: 'http://sp.com/'
+    app_type: sharepoint
+    callbacks: []
+    cross_origin_auth: false
+    custom_login_page_on: true
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    oidc_conformant: false
+    sso_disabled: false
+  - name: OmarSPA
+    allowed_clients: []
+    allowed_logout_urls:
+      - 'http://localhost:3000/'
+    allowed_origins:
+      - 'http://localhost:5000/'
+    app_type: spa
+    callbacks:
+      - 'http://localhost:3000/'
+      - 'http://localhost:3000/callback'
+      - 'http://localhost:3333/callback'
+    client_metadata:
+      sender: Boo
+    cross_origin_auth: false
+    custom_login_page_on: true
+    description: This is a single page app used as POC for Auth0 authentication
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 60
+      secret_encoded: false
+    logo_uri: ''
+    oidc_conformant: false
+    sso: false
+    sso_disabled: false
+    token_endpoint_auth_method: none
+    web_origins:
+      - 'http://localhost:3000'
+      - 'http://localhost:5000'
+  - name: Phenom
+    addons:
+      samlp: {}
+    allowed_clients: []
+    allowed_logout_urls:
+      - 'http://localhost:3000/logout'
+    allowed_origins: []
+    app_type: spa
+    callbacks:
+      - 'http://localhost:3000/callback'
+    cross_origin_auth: false
+    custom_login_page_on: true
+    description: ''
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    logo_uri: ''
+    oidc_conformant: true
+    sso: false
+    sso_disabled: false
+    token_endpoint_auth_method: none
+    web_origins: []
+  - name: SCIM20toAuth0 (Test Application)
+    app_type: non_interactive
+    cross_origin_auth: false
+    custom_login_page_on: true
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    oidc_conformant: false
+    sso_disabled: false
+  - name: SPAwithEmbeddedLock
     allowed_clients: []
     allowed_logout_urls: []
     allowed_origins: []
     app_type: spa
-    callbacks: []
+    callbacks:
+      - 'http://localhost:8086/'
     cross_origin_auth: false
     custom_login_page_on: true
     description: ''
@@ -120,9 +639,285 @@ clients:
     sso: true
     sso_disabled: false
     token_endpoint_auth_method: none
+    web_origins:
+      - 'http://localhost:8086'
+  - name: SPAwithSingleLogicalAPI
+    allowed_clients: []
+    allowed_logout_urls: []
+    allowed_origins: []
+    app_type: spa
+    callbacks:
+      - 'http://localhost:3000'
+      - 'http://localhost:3000/callback.html'
+    cross_origin_auth: false
+    custom_login_page_on: true
+    description: ''
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    logo_uri: ''
+    oidc_conformant: true
+    sso: false
+    sso_disabled: false
+    token_endpoint_auth_method: none
     web_origins: []
-  - name: Mulesoft API (Test Application)
-    app_type: non_interactive
+  - name: SalesForceApplication3rdParty
+    allowed_clients: []
+    allowed_logout_urls: []
+    allowed_origins: []
+    app_type: regular_web
+    callbacks:
+      - >-
+        https://login.salesforce.com/services/authcallback/00D1U0000012XdnUAE/HipsterBank
+    cross_origin_auth: false
+    custom_login_page_on: true
+    description: ''
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    logo_uri: ''
+    oidc_conformant: true
+    sso: false
+    sso_disabled: false
+    token_endpoint_auth_method: client_secret_post
+    web_origins: []
+  - name: SalesforceIntegration
+    addons:
+      salesforce:
+        salesforce_domain: login.salesforce.com?so=00D1U0000012Xdn
+        entity_id: 'https://mysfintegration.com'
+    app_type: salesforce
+    callbacks:
+      - 'https://login.salesforce.com?so=00D1U0000012Xdn'
+      - 'https://login.salesforce.com'
+    cross_origin_auth: false
+    custom_login_page_on: true
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    oidc_conformant: false
+    sso: false
+    sso_disabled: false
+  - name: Sysmex SPA
+    app_type: spa
+    cross_origin_auth: false
+    custom_login_page_on: true
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    oidc_conformant: true
+    sso_disabled: false
+    token_endpoint_auth_method: none
+  - name: Sysmex Web Application
+    allowed_clients: []
+    allowed_logout_urls: []
+    allowed_origins: []
+    app_type: regular_web
+    callbacks: []
+    cross_origin_auth: false
+    custom_login_page_on: true
+    description: ''
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 1200
+      secret_encoded: false
+    logo_uri: ''
+    oidc_conformant: true
+    sso: false
+    sso_disabled: false
+    token_endpoint_auth_method: client_secret_post
+    web_origins: []
+  - name: Users Dashboard
+    allowed_clients:
+      - 82uvoYrqZzuCSteVHDzpsxTW6N3VATnW
+    allowed_logout_urls:
+      - 'https://omarmodern.us8.webtask.io/auth0-delegated-admin'
+    allowed_origins: []
+    app_type: spa
+    callbacks:
+      - 'https://omarmodern.us8.webtask.io/auth0-delegated-admin/login'
+    cross_origin_auth: false
+    custom_login_page_on: true
+    description: ''
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    logo_uri: ''
+    oidc_conformant: false
+    sso: false
+    sso_disabled: false
+    token_endpoint_auth_method: none
+    web_origins: []
+  - name: WebAppDotNetCore20
+    allowed_clients: []
+    allowed_logout_urls: []
+    allowed_origins: []
+    app_type: regular_web
+    callbacks:
+      - 'http://localhost:5001/signin-auth0'
+    cross_origin_auth: false
+    custom_login_page_on: true
+    description: ''
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    logo_uri: ''
+    oidc_conformant: true
+    sso: false
+    sso_disabled: false
+    token_endpoint_auth_method: client_secret_post
+    web_origins: []
+  - name: WebAppLockWidget
+    allowed_clients: []
+    allowed_logout_urls: []
+    allowed_origins: []
+    app_type: regular_web
+    callbacks:
+      - 'http://localhost:9000/callback'
+    cross_origin_auth: false
+    custom_login_page_on: true
+    description: ''
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    logo_uri: ''
+    oidc_conformant: true
+    sso: true
+    sso_disabled: false
+    token_endpoint_auth_method: client_secret_post
+    web_origins: []
+  - name: WebAppindotnet
+    allowed_clients: []
+    allowed_logout_urls:
+      - 'http://localhost:56572/'
+    allowed_origins: []
+    app_type: regular_web
+    callbacks:
+      - 'http://localhost:56572/signin-auth0'
+    cross_origin_auth: false
+    custom_login_page_on: true
+    description: ''
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    logo_uri: ''
+    oidc_conformant: true
+    sso: false
+    sso_disabled: false
+    token_endpoint_auth_method: client_secret_post
+    web_origins: []
+  - name: WebAppy
+    allowed_clients: []
+    allowed_logout_urls:
+      - 'http://localhost:5000/logout'
+    allowed_origins:
+      - 'http://localhost:3000/'
+    app_type: regular_web
+    callbacks:
+      - 'http://localhost:5000/callback?sp=hello'
+      - 'https://omarmodern.us.webtask.io/auth0-delegated-admin/login'
+      - 'https://jwt.io/'
+      - 'https://omarmodern.us8.webtask.io/auth0-delegated-admin/login'
+      - 'https://www.getpostman.com/oauth2/callback'
+    client_metadata:
+      sender: Web Appy Postman
+      ru: WebAppy
+    cross_origin_auth: false
+    custom_login_page_on: true
+    description: ''
+    grant_types:
+      - authorization_code
+      - client_credentials
+      - 'http://auth0.com/oauth/grant-type/mfa-oob'
+      - 'http://auth0.com/oauth/grant-type/mfa-otp'
+      - 'http://auth0.com/oauth/grant-type/mfa-recovery-code'
+      - 'http://auth0.com/oauth/grant-type/password-realm'
+      - implicit
+      - password
+      - refresh_token
+    initiate_login_uri: 'https://omarmodern.local:5000/login'
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      alg: RS256
+      lifetime_in_seconds: 60
+      secret_encoded: false
+    logo_uri: 'https://jwt.io/img/pic_logo.svg'
+    oidc_conformant: true
+    sso: false
+    sso_disabled: false
+    token_endpoint_auth_method: client_secret_post
+    web_origins:
+      - 'http://localhost:3000'
+      - 'http://localhost:5000'
+  - name: auth0-account-link
     cross_origin_auth: false
     custom_login_page_on: true
     grant_types:
@@ -137,12 +932,22 @@ clients:
       secret_encoded: false
     oidc_conformant: false
     sso_disabled: false
-  - name: Office365ForDemo
-    addons:
-      office365:
-        domain: your-office365-domain.com
-    app_type: office365
-    callbacks: []
+  - name: auth0-authz
+    cross_origin_auth: false
+    custom_login_page_on: true
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    oidc_conformant: false
+    sso_disabled: false
+  - name: auth0-delegated-admin
     cross_origin_auth: false
     custom_login_page_on: true
     grant_types:
@@ -189,14 +994,35 @@ clients:
       secret_encoded: false
     oidc_conformant: true
     sso_disabled: false
+  - name: auth0-sso-dashboard
+    cross_origin_auth: false
+    custom_login_page_on: true
+    grant_types:
+      - authorization_code
+      - implicit
+      - refresh_token
+      - client_credentials
+    is_first_party: true
+    is_token_endpoint_ip_header_trusted: false
+    jwt_configuration:
+      lifetime_in_seconds: 36000
+      secret_encoded: false
+    oidc_conformant: false
+    sso_disabled: false
 databases:
-  - name: GoldClubMembers
+  - name: AmericanAirline
     strategy: auth0
     enabled_clients:
-      - auth0-deploy-cli-extension
-      - auth0-github-deploy
-      - Montage
-      - Affinix
+      - API Explorer Application
+      - Identity Labs - Web App
+      - DesktopApp
+      - WebAppy
+      - MachinetoMachineApp
+      - ' Organizer Service (Test Application)'
+      - Expenses API (Test Application)
+      - MobileApp
+      - MFAAPIPOC
+      - auth0-delegated-admin
     is_domain_connection: false
     options:
       mfa:
@@ -208,17 +1034,142 @@ databases:
       brute_force_protection: true
       strategy_version: 2
     realms:
-      - GoldClubMembers
+      - AmericanAirline
+  - name: HelpDesk
+    strategy: auth0
+    enabled_clients:
+      - ' Organizer Service (Test Application)'
+      - Users Dashboard
+      - auth0-delegated-admin
+    is_domain_connection: false
+    options:
+      mfa:
+        active: true
+        return_enroll_settings: true
+      passwordPolicy: good
+      disable_signup: true
+      requires_username: false
+      brute_force_protection: true
+      strategy_version: 2
+    realms:
+      - HelpDesk
+  - name: HipsterBank
+    strategy: auth0
+    enabled_clients:
+      - SalesforceIntegration
+      - DesktopApp
+      - OmarSPA
+      - SalesForceApplication3rdParty
+      - MachinetoMachineApp
+      - My App
+      - ' Organizer Service (Test Application)'
+      - Default App
+      - auth0-account-link
+      - WebAppDotNetCore20
+      - WebAppindotnet
+      - MFAAPIPOC
+      - MySharepointApp
+      - auth0-delegated-admin
+      - MFAROPG (Test Application)
+    is_domain_connection: false
+    options:
+      mfa:
+        active: true
+        return_enroll_settings: true
+      passwordPolicy: good
+      disable_signup: false
+      requires_username: true
+      brute_force_protection: true
+      strategy_version: 2
+      enabledDatabaseCustomization: false
+      customScripts:
+        login: ./databases/HipsterBank/login.js
+      import_mode: false
+    realms:
+      - HipsterBank
+  - name: SourceDBforMIgration
+    strategy: auth0
+    enabled_clients:
+      - SPAwithEmbeddedLock
+      - Identity Labs - Web App
+      - DesktopApp
+      - DashboardAdmin
+      - WebAppLockWidget
+      - WebAppy
+      - Sysmex SPA
+      - MachinetoMachineApp
+      - My App
+      - auth0-authz
+      - ' Organizer Service (Test Application)'
+      - Expenses API (Test Application)
+      - auth0-account-link
+      - MobileApp
+      - WebAppDotNetCore20
+      - WebAppindotnet
+      - MFAAPIPOC
+      - MySharepointApp
+      - auth0-delegated-admin
+      - MFAROPG (Test Application)
+      - IdentityLabsMobile
+      - auth0-sso-dashboard
+    is_domain_connection: false
+    options:
+      mfa:
+        active: true
+        return_enroll_settings: true
+      passwordPolicy: good
+      disable_signup: false
+      requires_username: false
+      brute_force_protection: true
+      strategy_version: 2
+      enabledDatabaseCustomization: true
+      customScripts:
+        login: ./databases/SourceDBforMIgration/login.js
+      import_mode: true
+      password_history:
+        enable: true
+        size: 5
+      password_dictionary:
+        enable: true
+      password_no_personal_info:
+        enable: true
+    realms:
+      - SourceDBforMIgration
   - name: Username-Password-Authentication
     strategy: auth0
     enabled_clients:
-      - auth0-deploy-cli-extension
-      - AD RMS
-      - auth0-github-deploy
+      - SalesforceIntegration
+      - SPAwithEmbeddedLock
+      - API Explorer Application
+      - Identity Labs - Web App
+      - DesktopApp
+      - OmarSPA
+      - DashboardAdmin
+      - WebAppLockWidget
+      - Account Linking SPA
+      - WebAppy
+      - SalesForceApplication3rdParty
+      - SCIM20toAuth0 (Test Application)
+      - Sysmex SPA
+      - MachinetoMachineApp
+      - My App
+      - auth0-authz
+      - Phenom
+      - ' Organizer Service (Test Application)'
+      - Default App
+      - Expenses API (Test Application)
+      - auth0-account-link
+      - MobileApp
+      - WebAppDotNetCore20
+      - WebAppindotnet
+      - MFAAPIPOC
+      - MySharepointApp
+      - auth0-delegated-admin
+      - MFAROPG (Test Application)
+      - IdentityLabsMobile
       - Montage
-      - Mulesoft API (Test Application)
-      - Affinix
-      - Office365ForDemo
+      - auth0-sso-dashboard
+      - SPAwithSingleLogicalAPI
     is_domain_connection: false
     options:
       mfa:
@@ -227,45 +1178,554 @@ databases:
       passwordPolicy: good
       brute_force_protection: true
       strategy_version: 2
+      password_history:
+        enable: false
+        size: 5
+      password_dictionary:
+        enable: false
+      password_no_personal_info:
+        enable: false
+      password_complexity_options:
+        min_length: 8
       requires_username: false
-      validation:
-        username:
-          min: 1
-          max: 15
+    realms:
+      - Username-Password-Authentication
+  - name: customdb
+    strategy: auth0
+    enabled_clients:
+      - Identity Labs - Web App
+      - DesktopApp
+      - Sysmex SPA
+      - MachinetoMachineApp
+      - My App
+      - ' Organizer Service (Test Application)'
+      - Default App
+      - Expenses API (Test Application)
+      - auth0-account-link
+      - MobileApp
+      - WebAppDotNetCore20
+      - WebAppindotnet
+      - MFAAPIPOC
+      - MySharepointApp
+      - auth0-delegated-admin
+      - MFAROPG (Test Application)
+      - IdentityLabsMobile
+    is_domain_connection: false
+    options:
+      mfa:
+        active: true
+        return_enroll_settings: true
+      passwordPolicy: good
+      disable_signup: false
+      requires_username: false
+      brute_force_protection: true
+      strategy_version: 2
+      enabledDatabaseCustomization: true
+      customScripts:
+        login: ./databases/customdb/login.js
       password_history:
         enable: true
-        size: 9
+        size: 5
       password_dictionary:
         enable: true
       password_no_personal_info:
         enable: true
       password_complexity_options:
         min_length: 8
+      import_mode: false
     realms:
-      - Username-Password-Authentication
+      - customdb
+  - name: customtest
+    strategy: auth0
+    enabled_clients: []
+    is_domain_connection: false
+    options:
+      mfa:
+        active: true
+        return_enroll_settings: true
+      passwordPolicy: good
+      disable_signup: false
+      requires_username: false
+      brute_force_protection: true
+      strategy_version: 2
+      enabledDatabaseCustomization: true
+      customScripts:
+        login: ./databases/customtest/login.js
+    realms:
+      - customtest
 connections:
-  - name: IPConn
+  - name: AzureADB2C
+    strategy: oauth2
+    enabled_clients:
+      - SalesforceIntegration
+      - SPAwithEmbeddedLock
+      - Identity Labs - Web App
+      - DesktopApp
+      - OmarSPA
+      - DashboardAdmin
+      - WebAppLockWidget
+      - Account Linking SPA
+      - WebAppy
+      - SalesForceApplication3rdParty
+      - Sysmex SPA
+      - MachinetoMachineApp
+      - My App
+      - ' Organizer Service (Test Application)'
+      - Expenses API (Test Application)
+      - auth0-account-link
+      - Sysmex Web Application
+      - MobileApp
+      - WebAppDotNetCore20
+      - WebAppindotnet
+      - MFAAPIPOC
+      - Users Dashboard
+      - MySharepointApp
+      - auth0-delegated-admin
+      - MFAROPG (Test Application)
+      - IdentityLabsMobile
+      - auth0-sso-dashboard
+      - SPAwithSingleLogicalAPI
+    is_domain_connection: false
+    options:
+      client_id: 5Tbemw8u1NQdXiiwhCzAe7aZzQlIR5pa
+      client_secret: Wd9uG6sKI7gKl5MZ0YG0nflw1b_gVcv94_JWPc7dFx2MOpY-AlDlL8yeUzwyUnGq
+      scripts:
+        fetchUserProfile: |-
+          function(accessToken, ctx, cb) {
+            const jwt = require('jsonwebtoken');
+            const decoded = jwt.decode(ctx.id_token);
+            cb(null, {
+              user_id: decoded.sub,
+              family_name: decoded.family_name,
+              given_name: decoded.given_name,
+              name: decoded.name,
+              email: decoded.email
+            });
+          }
+      authorizationURL: >-
+        https://login.microsoftonline.com/YOUR_DIRECTORY_NAME.onmicrosoft.com/oauth2/v2.0/authorize
+      tokenURL: >-
+        https://login.microsoftonline.com/YOUR_DIRECTORY_NAME.onmicrosoft.com/oauth2/v2.0/token?p=YOUR_POLICY_NAME
+      scope: openid profile
+      authParams:
+        p: YOUR_POLICY_NAME
+  - name: FitbitConnect
+    strategy: oauth2
+    enabled_clients:
+      - SalesforceIntegration
+      - SPAwithEmbeddedLock
+      - API Explorer Application
+      - Identity Labs - Web App
+      - DesktopApp
+      - OmarSPA
+      - DashboardAdmin
+      - WebAppLockWidget
+      - Account Linking SPA
+      - WebAppy
+      - SalesForceApplication3rdParty
+      - SCIM20toAuth0 (Test Application)
+      - Sysmex SPA
+      - MachinetoMachineApp
+      - My App
+      - auth0-authz
+      - ' Organizer Service (Test Application)'
+      - Default App
+      - Expenses API (Test Application)
+      - auth0-account-link
+      - Sysmex Web Application
+      - MobileApp
+      - WebAppDotNetCore20
+      - WebAppindotnet
+      - MFAAPIPOC
+      - Users Dashboard
+      - MySharepointApp
+      - auth0-delegated-admin
+      - MFAROPG (Test Application)
+      - IdentityLabsMobile
+      - auth0-sso-dashboard
+      - SPAwithSingleLogicalAPI
+    is_domain_connection: false
+    options:
+      authorizationURL: 'https://www.fitbit.com/oauth2/authorize'
+      tokenURL: 'https://api.fitbit.com/oauth2/token'
+      scope: >-
+        activity heartrate location nutrition profile settings sleep social
+        weight
+      scripts:
+        fetchUserProfile: |-
+          function(accessToken, ctx, cb) {
+
+            request.get('https://api.fitbit.com/1/user/-/profile.json', {
+                headers: {
+
+                  'Authorization': 'Bearer ' + accessToken
+                }
+              }
+
+              ,
+              function(err, r, body) {
+                if (err) {
+                  return cb(err);
+                }
+                try {
+                  var profile = JSON.parse(body);
+                  profile.provider = 'fitbit';
+                  profile.id = profile.user.encodedId;
+                  profile.displayName = profile.user.displayName;
+                  profile.name = profile.user.fullName;
+                  cb(null, profile);
+                } catch (e) {
+                  cb(e);
+                }
+              });
+
+
+          }
+      client_id: 5Tbemw8u1NQdXiiwhCzAe7aZzQlIR5pa
+      client_secret: Wd9uG6sKI7gKl5MZ0YG0nflw1b_gVcv94_JWPc7dFx2MOpY-AlDlL8yeUzwyUnGq
+  - name: SAMLIDP1
+    strategy: samlp
+    enabled_clients:
+      - DesktopApp
+      - MachinetoMachineApp
+      - My App
+      - ' Organizer Service (Test Application)'
+      - auth0-account-link
+      - MFAAPIPOC
+      - auth0-delegated-admin
+      - MFAROPG (Test Application)
+    is_domain_connection: false
+    options:
+      metadataUrl: >-
+        https://omarsamlidp.auth0.com/samlp/metadata/okTVmOsN3pYMK4nSN15yRLe7hLrBr3wH
+      signingCert: >-
+        LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURCVENDQWUyZ0F3SUJBZ0lKUHJsRXd3YUdTeFJ0TUEwR0NTcUdTSWIzRFFFQkN3VUFNQ0F4SGpBY0JnTlYKQkFNVEZXOXRZWEp6WVcxc2FXUndMbUYxZEdnd0xtTnZiVEFlRncweE9EQTJNRGd4T0RFME5UTmFGdzB6TWpBeQpNVFV4T0RFME5UTmFNQ0F4SGpBY0JnTlZCQU1URlc5dFlYSnpZVzFzYVdSd0xtRjFkR2d3TG1OdmJUQ0NBU0l3CkRRWUpLb1pJaHZjTkFRRUJCUUFEZ2dFUEFEQ0NBUW9DZ2dFQkFNTWRyUVpaMGxMWEJVcThoVENTUHpBR0NrcHoKOEVKT2thamk0TlkyL1NVa3FXZ1ZuVUsrU2MzdUo4OVMyV2dxQXRic3hpSEpjM1c3UWtNSlJ0RUl2YXgvWnJ1aApVNGN3dUcyaStzOC9WcW1zZUErRXNpOC9nbWltcHlGSkNrLzhlWk1yVnV4WEQwK3VtVUZkK0s0QkFKWG1MQlhQCk4xNGlXK0FWVzdGeFdwa0ZuSE1kVzc1WGxmcW9xZDYwQVZpb1hVam10djVmTTFEWEh5ZVA0NVpYdURreXl5TnUKSisyZzVsUzNXU1dOcUZBMVN5NXhUbHdUaEVWZlVlOHAvMUIwRGFvby82QSs2VHdnY3o5YnJwNDR1bkwwZWNaTApLNWI0dHB1V1RiWGNqMzVEWk10Ly93cHQ5a0R5M0xCbzhBWklGa0w1alYrU0IwV1dSSGpYTGlZT2d2a0NBd0VBCkFhTkNNRUF3RHdZRFZSMFRBUUgvQkFVd0F3RUIvekFkQmdOVkhRNEVGZ1FVS1hJSnBwVjV1VE9MV0ZsRCs3U3kKRlpaWU4yd3dEZ1lEVlIwUEFRSC9CQVFEQWdLRU1BMEdDU3FHU0liM0RRRUJDd1VBQTRJQkFRQlEySUExS1Q2RwpUT2ZzUUt3UlBzU2dqbzRqL3cwS3JVNjZQZEs5MVNRZE44b24vVHFHMGV2QnZiSHRPeEQzd3VVb3lEenVDNFgrCmZBeGJiRXNVbGt5bzVQYkVTV2Z0dEx5eWI4Qm4zRExZMTJNbEdpaWEwNkFwUVRjNVc2ZHhwSlhSTHV4dGtKbU4KZW9oOXU5SmNhT1lsOWlqVjlGWG5nQlJzUnIrbGlvMExWRm4rV1VZbm96Wk5QRHJ4R2NoNS9FWm1NMmxEWnplWAp6TWhrdHJiYUF1VVpPdUo0ZjRJUkVwa2VOd0s2Z2dzQzZmZ2N2WUkrcEhDc3l4VVpSV1dmN1MzY281WEhadmxBCmxOT0o5QVZTdnB5QUMxMGtrTkkvN2RlcXFYNXpxdDI3MTBKMGF5S05aZm1hU2szUUxZLzJVQ0JRR0NTTlhmYW8KY0RINVZBaGZORUJkCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+      signInEndpoint: 'https://omarsamlidp.auth0.com/samlp/okTVmOsN3pYMK4nSN15yRLe7hLrBr3wH'
+      signOutEndpoint: >-
+        https://omarsamlidp.auth0.com/samlp/okTVmOsN3pYMK4nSN15yRLe7hLrBr3wH/logout
+      expires: '2032-02-15T18:14:53.000Z'
+      subject:
+        commonName: omarsamlidp.auth0.com
+      thumbprints:
+        - 9cdf2cc20481cf28fd1a1c02bbdc2e935ca7a4a3
+      cert: |
+        -----BEGIN CERTIFICATE-----
+        MIIDBTCCAe2gAwIBAgIJPrlEwwaGSxRtMA0GCSqGSIb3DQEBCwUAMCAxHjAcBgNV
+        BAMTFW9tYXJzYW1saWRwLmF1dGgwLmNvbTAeFw0xODA2MDgxODE0NTNaFw0zMjAy
+        MTUxODE0NTNaMCAxHjAcBgNVBAMTFW9tYXJzYW1saWRwLmF1dGgwLmNvbTCCASIw
+        DQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMMdrQZZ0lLXBUq8hTCSPzAGCkpz
+        8EJOkaji4NY2/SUkqWgVnUK+Sc3uJ89S2WgqAtbsxiHJc3W7QkMJRtEIvax/Zruh
+        U4cwuG2i+s8/VqmseA+Esi8/gmimpyFJCk/8eZMrVuxXD0+umUFd+K4BAJXmLBXP
+        N14iW+AVW7FxWpkFnHMdW75Xlfqoqd60AVioXUjmtv5fM1DXHyeP45ZXuDkyyyNu
+        J+2g5lS3WSWNqFA1Sy5xTlwThEVfUe8p/1B0Daoo/6A+6Twgcz9brp44unL0ecZL
+        K5b4tpuWTbXcj35DZMt//wpt9kDy3LBo8AZIFkL5jV+SB0WWRHjXLiYOgvkCAwEA
+        AaNCMEAwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUKXIJppV5uTOLWFlD+7Sy
+        FZZYN2wwDgYDVR0PAQH/BAQDAgKEMA0GCSqGSIb3DQEBCwUAA4IBAQBQ2IA1KT6G
+        TOfsQKwRPsSgjo4j/w0KrU66PdK91SQdN8on/TqG0evBvbHtOxD3wuUoyDzuC4X+
+        fAxbbEsUlkyo5PbESWfttLyyb8Bn3DLY12MlGiia06ApQTc5W6dxpJXRLuxtkJmN
+        eoh9u9JcaOYl9ijV9FXngBRsRr+lio0LVFn+WUYnozZNPDrxGch5/EZmM2lDZzeX
+        zMhktrbaAuUZOuJ4f4IREpkeNwK6ggsC6fgcvYI+pHCsyxUZRWWf7S3co5XHZvlA
+        lNOJ9AVSvpyAC10kkNI/7deqqX5zqt2710J0ayKNZfmaSk3QLY/2UCBQGCSNXfao
+        cDH5VAhfNEBd
+        -----END CERTIFICATE-----
+  - name: SAMLIDPfromScratch
+    strategy: samlp
+    enabled_clients: []
+    is_domain_connection: false
+    options:
+      signInEndpoint: 'https://omarsamlidp.auth0.com/samlp/okTVmOsN3pYMK4nSN15yRLe7hLrBr3wH'
+      signOutEndpoint: 'https://omarsamlidp.auth0.com/logout'
+      protocolBinding: ''
+      user_id_attribute: ''
+      debug: false
+      signSAMLRequest: false
+      signatureAlgorithm: rsa-sha256
+      digestAlgorithm: sha256
+      fieldsMapJsonRaw: '{}'
+      fieldsMap: {}
+      idpinitiated:
+        client_id: cvtufF_GQcDLBhkjaP2H8ircnxjlIPXc
+        client_protocol: oauth2
+        client_authorizequery: ''
+      signingCert: >-
+        LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tDQpNSUlEQlRDQ0FlMmdBd0lCQWdJSlBybEV3d2FHU3hSdE1BMEdDU3FHU0liM0RRRUJDd1VBTUNBeEhqQWNCZ05WDQpCQU1URlc5dFlYSnpZVzFzYVdSd0xtRjFkR2d3TG1OdmJUQWVGdzB4T0RBMk1EZ3hPREUwTlROYUZ3MHpNakF5DQpNVFV4T0RFME5UTmFNQ0F4SGpBY0JnTlZCQU1URlc5dFlYSnpZVzFzYVdSd0xtRjFkR2d3TG1OdmJUQ0NBU0l3DQpEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTU1kclFaWjBsTFhCVXE4aFRDU1B6QUdDa3B6DQo4RUpPa2FqaTROWTIvU1VrcVdnVm5VSytTYzN1Sjg5UzJXZ3FBdGJzeGlISmMzVzdRa01KUnRFSXZheC9acnVoDQpVNGN3dUcyaStzOC9WcW1zZUErRXNpOC9nbWltcHlGSkNrLzhlWk1yVnV4WEQwK3VtVUZkK0s0QkFKWG1MQlhQDQpOMTRpVytBVlc3RnhXcGtGbkhNZFc3NVhsZnFvcWQ2MEFWaW9YVWptdHY1Zk0xRFhIeWVQNDVaWHVEa3l5eU51DQpKKzJnNWxTM1dTV05xRkExU3k1eFRsd1RoRVZmVWU4cC8xQjBEYW9vLzZBKzZUd2djejlicnA0NHVuTDBlY1pMDQpLNWI0dHB1V1RiWGNqMzVEWk10Ly93cHQ5a0R5M0xCbzhBWklGa0w1alYrU0IwV1dSSGpYTGlZT2d2a0NBd0VBDQpBYU5DTUVBd0R3WURWUjBUQVFIL0JBVXdBd0VCL3pBZEJnTlZIUTRFRmdRVUtYSUpwcFY1dVRPTFdGbEQrN1N5DQpGWlpZTjJ3d0RnWURWUjBQQVFIL0JBUURBZ0tFTUEwR0NTcUdTSWIzRFFFQkN3VUFBNElCQVFCUTJJQTFLVDZHDQpUT2ZzUUt3UlBzU2dqbzRqL3cwS3JVNjZQZEs5MVNRZE44b24vVHFHMGV2QnZiSHRPeEQzd3VVb3lEenVDNFgrDQpmQXhiYkVzVWxreW81UGJFU1dmdHRMeXliOEJuM0RMWTEyTWxHaWlhMDZBcFFUYzVXNmR4cEpYUkx1eHRrSm1ODQplb2g5dTlKY2FPWWw5aWpWOUZYbmdCUnNScitsaW8wTFZGbitXVVlub3paTlBEcnhHY2g1L0VabU0ybERaemVYDQp6TWhrdHJiYUF1VVpPdUo0ZjRJUkVwa2VOd0s2Z2dzQzZmZ2N2WUkrcEhDc3l4VVpSV1dmN1MzY281WEhadmxBDQpsTk9KOUFWU3ZweUFDMTBra05JLzdkZXFxWDV6cXQyNzEwSjBheUtOWmZtYVNrM1FMWS8yVUNCUUdDU05YZmFvDQpjREg1VkFoZk5FQmQNCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0NCg==
+      expires: '2032-02-15T18:14:53.000Z'
+      subject:
+        commonName: omarsamlidp.auth0.com
+      thumbprints:
+        - 9cdf2cc20481cf28fd1a1c02bbdc2e935ca7a4a3
+      cert: "-----BEGIN CERTIFICATE-----\r\nMIIDBTCCAe2gAwIBAgIJPrlEwwaGSxRtMA0GCSqGSIb3DQEBCwUAMCAxHjAcBgNV\r\nBAMTFW9tYXJzYW1saWRwLmF1dGgwLmNvbTAeFw0xODA2MDgxODE0NTNaFw0zMjAy\r\nMTUxODE0NTNaMCAxHjAcBgNVBAMTFW9tYXJzYW1saWRwLmF1dGgwLmNvbTCCASIw\r\nDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMMdrQZZ0lLXBUq8hTCSPzAGCkpz\r\n8EJOkaji4NY2/SUkqWgVnUK+Sc3uJ89S2WgqAtbsxiHJc3W7QkMJRtEIvax/Zruh\r\nU4cwuG2i+s8/VqmseA+Esi8/gmimpyFJCk/8eZMrVuxXD0+umUFd+K4BAJXmLBXP\r\nN14iW+AVW7FxWpkFnHMdW75Xlfqoqd60AVioXUjmtv5fM1DXHyeP45ZXuDkyyyNu\r\nJ+2g5lS3WSWNqFA1Sy5xTlwThEVfUe8p/1B0Daoo/6A+6Twgcz9brp44unL0ecZL\r\nK5b4tpuWTbXcj35DZMt//wpt9kDy3LBo8AZIFkL5jV+SB0WWRHjXLiYOgvkCAwEA\r\nAaNCMEAwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUKXIJppV5uTOLWFlD+7Sy\r\nFZZYN2wwDgYDVR0PAQH/BAQDAgKEMA0GCSqGSIb3DQEBCwUAA4IBAQBQ2IA1KT6G\r\nTOfsQKwRPsSgjo4j/w0KrU66PdK91SQdN8on/TqG0evBvbHtOxD3wuUoyDzuC4X+\r\nfAxbbEsUlkyo5PbESWfttLyyb8Bn3DLY12MlGiia06ApQTc5W6dxpJXRLuxtkJmN\r\neoh9u9JcaOYl9ijV9FXngBRsRr+lio0LVFn+WUYnozZNPDrxGch5/EZmM2lDZzeX\r\nzMhktrbaAuUZOuJ4f4IREpkeNwK6ggsC6fgcvYI+pHCsyxUZRWWf7S3co5XHZvlA\r\nlNOJ9AVSvpyAC10kkNI/7deqqX5zqt2710J0ayKNZfmaSk3QLY/2UCBQGCSNXfao\r\ncDH5VAhfNEBd\r\n-----END CERTIFICATE-----\r\n"
+      signing_key:
+        key: "-----BEGIN RSA PRIVATE KEY-----\r\nMIIEowIBAAKCAQEAufS1gGVxNIWYv6QIbGXz+NjHFxzVydc3JQo/8REq1BVdVHqe\r\nDTWnT0Y4LjxDcQFjJPjHCqc2eK6eWkXQ7d+qx1BLW7h2KEjS60Aa5+ZXvVZ+QJn9\r\nVd5oKRJaov3R6Rpy2lvqE1mb2d7l1HsDil6qhxcxjDUMkm9l+bvThBKOjrj82fYk\r\nkkHjkh90UzbtesS1mC/W8/ymxTBygNJjV3WZOvvlrlf949sI0qg6X9j0XkF8gW7S\r\nHmVJKn7mU/2nECoVg6TPkf5d3u5/uVvZQNGp8m0vVAJ3Nlgw9nPwTAkL75cr5mq\r\naX5ZbJI/6SAbvDT/V2ZxIPGHqqeCe5ayhMp3TQIDAQABAoIBABFPo5npV6mRClBE\r\n3/ffYd/3pkkTiR96JosPMjap53fI6WBU7ePC6+loWxCK0ahyfZ1Sf40RVfPUJa+3\r\nsiSC3u4hHnLScEV9ygzWcerGucJJjAVNkJTu2HmCWOe1g1YU/T4wslDM1cJpirHG\r\nJeU6vNtIoHcx9RKoxjCCeMVhyN2mWEyU8sw4EJ3Z/aS0aDDeLLlcTXVL+49eocoC\r\niTMVGcxYZmVkEBDsQdMQY7tVM+fP/lFhWoG+/TJ7IR+qjwEP7RYjGF3Y3lQa3x7L\r\na0dhlD56VmmKqpK7xjIqV6los3rWzpiuzF/o0ASb2an4aZVxKcNqbiiSufw9htjz\r\tt+kPG0CgYEA5mg3gncHWo/5H+wV/8ttXBDZ8rbP/jWJNYyT1LWk/ma19WS6IdT8\r\nV2dBcaFcJqO3b3dP+RWhaNZIQo/tMjjoa3H3QmNzuGF/8M8OjvceRvGVZ9CF6RYH\r\nqok0dHTtYLMTyxOUAUCtixh/vYz9FiSNdi6MlsW2hkEuL6aAUDVsaisCgYEAzpx9\r\n6hpv6mbe+fL69W+hTQtB988ti616oKq3Wifdk1du0Z+S+QLly4FhNkWvu8TdoWVF\r\nqzpTdHVOpb5VBJpxB7l+ZCiymD0VCVu1DbZ96wXc0VtaDBLLdnOwe75gr534g0fK\r\niUgm9B3y8Y/0YXMeG2i03J9Axcmq4AJBURdjQGcCgYBruVQismYEyIWQkD/k3Yae\r\n4d4UpbZvQzaIi9ZeQCMJMppmRhbkVIE6mDM33lqIUkkkW2NPsPZLXsxgGoyqy4KX\r\nIayaJIdpMGSyAQzseMt2HeNdq1fAl6Uz7XxR6o1FhdR+QQQU5dl9zBGFXRLDNInT\r\nNIZUw9HHyVe/vZgGaEPtCwKBgHJQG0p/PhSOvifEzB0nmjMqW2Fke2qgnQxv5+o1\r\nzF5NLb9FbuffNo0WFFcWz1gwX/+ALL/EEZCJpu4FFLzrRkZj1w5LhiS9Bvqaht4D\r\bj+uirI6vOOZMoFjGO4eMxh3apwYCHNUPFksiNImN6wDKVE46Xh3lDrajXRLSyA2\r\ntG9ZAoGBALlHWpCJQ4DInoImerJNg1GslPRe4g2sHKBBiFHxQrCQgiq9qwl2HHAT\r\nFn09esSqAG+IpYZ3AZryCd+p5Xio4R1kRZLc9kHDPyOeSgJdNDn3pfubP4WwL4/n\r\nxl50skPc5lOCAsW2Mzy1+hpfDe81s/Hg4AQKrU75goR0INqI8BrF\r\n-----END RSA PRIVATE KEY-----"
+        cert: "-----BEGIN CERTIFICATE-----\r\nAAAAB3NzaC1yc2EAAAADAQABAAABAQC59LWAZXE0hZi/pAhsZfP42McXHNXJ1zclCj/xESrUFV1Uep4NNadPRjguPENxAWMk+McKpzZ4rp5aRdDt36rHUEtbuHYoSNLrQBrn5le9Vn5Amf1V3mgpElqi/dHpGnLaW+oTWZvZ3uXUewOKXqqHFzGMNQySb2X5u9OEEo6OuPzZ9iSSQeOSH3RTNu16xLWYL9bz/KbFMHKA0mNXdZk6++WuV/3j2wjSqDpf2PReQXyBbtLkeZUkqfuZT/acQKhWDpM+R/l3e7n+5W9lA0anybS9UAnc2WDD2c/BMCQvvlyvmappfllskj/pIBu8NP9XZnEg8Yeqp4J7lrKEyndN omarabdullah@C02WC1L3HTD5\r\n-----END CERTIFICATE-----\r\n"
+  - name: SAMLSuper
+    strategy: samlp
+    enabled_clients:
+      - SPAwithEmbeddedLock
+      - Identity Labs - Web App
+      - DesktopApp
+      - DashboardAdmin
+      - WebAppLockWidget
+      - Sysmex SPA
+      - MachinetoMachineApp
+      - My App
+      - auth0-authz
+      - ' Organizer Service (Test Application)'
+      - Expenses API (Test Application)
+      - auth0-account-link
+      - Sysmex Web Application
+      - MobileApp
+      - WebAppDotNetCore20
+      - WebAppindotnet
+      - MFAAPIPOC
+      - MySharepointApp
+      - auth0-delegated-admin
+      - MFAROPG (Test Application)
+      - IdentityLabsMobile
+      - auth0-sso-dashboard
+    is_domain_connection: false
+    options:
+      tenant_domain: hotmail.com
+      signInEndpoint: 'https://omarsamlidp.auth0.com/samlp/okTVmOsN3pYMK4nSN15yRLe7hLrBr3wH'
+      signOutEndpoint: 'https://omarsamlidp.auth0.com/logout'
+      protocolBinding: ''
+      user_id_attribute: ''
+      debug: false
+      signSAMLRequest: false
+      signatureAlgorithm: rsa-sha256
+      digestAlgorithm: sha256
+      fieldsMapJsonRaw: '{}'
+      fieldsMap: {}
+      idpinitiated:
+        client_id: cvtufF_GQcDLBhkjaP2H8ircnxjlIPXc
+        client_protocol: oauth2
+        client_authorizequery: ''
+      signingCert: >-
+        LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tDQpNSUlEQlRDQ0FlMmdBd0lCQWdJSlBybEV3d2FHU3hSdE1BMEdDU3FHU0liM0RRRUJDd1VBTUNBeEhqQWNCZ05WDQpCQU1URlc5dFlYSnpZVzFzYVdSd0xtRjFkR2d3TG1OdmJUQWVGdzB4T0RBMk1EZ3hPREUwTlROYUZ3MHpNakF5DQpNVFV4T0RFME5UTmFNQ0F4SGpBY0JnTlZCQU1URlc5dFlYSnpZVzFzYVdSd0xtRjFkR2d3TG1OdmJUQ0NBU0l3DQpEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTU1kclFaWjBsTFhCVXE4aFRDU1B6QUdDa3B6DQo4RUpPa2FqaTROWTIvU1VrcVdnVm5VSytTYzN1Sjg5UzJXZ3FBdGJzeGlISmMzVzdRa01KUnRFSXZheC9acnVoDQpVNGN3dUcyaStzOC9WcW1zZUErRXNpOC9nbWltcHlGSkNrLzhlWk1yVnV4WEQwK3VtVUZkK0s0QkFKWG1MQlhQDQpOMTRpVytBVlc3RnhXcGtGbkhNZFc3NVhsZnFvcWQ2MEFWaW9YVWptdHY1Zk0xRFhIeWVQNDVaWHVEa3l5eU51DQpKKzJnNWxTM1dTV05xRkExU3k1eFRsd1RoRVZmVWU4cC8xQjBEYW9vLzZBKzZUd2djejlicnA0NHVuTDBlY1pMDQpLNWI0dHB1V1RiWGNqMzVEWk10Ly93cHQ5a0R5M0xCbzhBWklGa0w1alYrU0IwV1dSSGpYTGlZT2d2a0NBd0VBDQpBYU5DTUVBd0R3WURWUjBUQVFIL0JBVXdBd0VCL3pBZEJnTlZIUTRFRmdRVUtYSUpwcFY1dVRPTFdGbEQrN1N5DQpGWlpZTjJ3d0RnWURWUjBQQVFIL0JBUURBZ0tFTUEwR0NTcUdTSWIzRFFFQkN3VUFBNElCQVFCUTJJQTFLVDZHDQpUT2ZzUUt3UlBzU2dqbzRqL3cwS3JVNjZQZEs5MVNRZE44b24vVHFHMGV2QnZiSHRPeEQzd3VVb3lEenVDNFgrDQpmQXhiYkVzVWxreW81UGJFU1dmdHRMeXliOEJuM0RMWTEyTWxHaWlhMDZBcFFUYzVXNmR4cEpYUkx1eHRrSm1ODQplb2g5dTlKY2FPWWw5aWpWOUZYbmdCUnNScitsaW8wTFZGbitXVVlub3paTlBEcnhHY2g1L0VabU0ybERaemVYDQp6TWhrdHJiYUF1VVpPdUo0ZjRJUkVwa2VOd0s2Z2dzQzZmZ2N2WUkrcEhDc3l4VVpSV1dmN1MzY281WEhadmxBDQpsTk9KOUFWU3ZweUFDMTBra05JLzdkZXFxWDV6cXQyNzEwSjBheUtOWmZtYVNrM1FMWS8yVUNCUUdDU05YZmFvDQpjREg1VkFoZk5FQmQNCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0NCg==
+      expires: '2032-02-15T18:14:53.000Z'
+      subject:
+        commonName: omarsamlidp.auth0.com
+      thumbprints:
+        - 9cdf2cc20481cf28fd1a1c02bbdc2e935ca7a4a3
+      cert: "-----BEGIN CERTIFICATE-----\r\nMIIDBTCCAe2gAwIBAgIJPrlEwwaGSxRtMA0GCSqGSIb3DQEBCwUAMCAxHjAcBgNV\r\nBAMTFW9tYXJzYW1saWRwLmF1dGgwLmNvbTAeFw0xODA2MDgxODE0NTNaFw0zMjAy\r\nMTUxODE0NTNaMCAxHjAcBgNVBAMTFW9tYXJzYW1saWRwLmF1dGgwLmNvbTCCASIw\r\nDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMMdrQZZ0lLXBUq8hTCSPzAGCkpz\r\n8EJOkaji4NY2/SUkqWgVnUK+Sc3uJ89S2WgqAtbsxiHJc3W7QkMJRtEIvax/Zruh\r\nU4cwuG2i+s8/VqmseA+Esi8/gmimpyFJCk/8eZMrVuxXD0+umUFd+K4BAJXmLBXP\r\nN14iW+AVW7FxWpkFnHMdW75Xlfqoqd60AVioXUjmtv5fM1DXHyeP45ZXuDkyyyNu\r\nJ+2g5lS3WSWNqFA1Sy5xTlwThEVfUe8p/1B0Daoo/6A+6Twgcz9brp44unL0ecZL\r\nK5b4tpuWTbXcj35DZMt//wpt9kDy3LBo8AZIFkL5jV+SB0WWRHjXLiYOgvkCAwEA\r\nAaNCMEAwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUKXIJppV5uTOLWFlD+7Sy\r\nFZZYN2wwDgYDVR0PAQH/BAQDAgKEMA0GCSqGSIb3DQEBCwUAA4IBAQBQ2IA1KT6G\r\nTOfsQKwRPsSgjo4j/w0KrU66PdK91SQdN8on/TqG0evBvbHtOxD3wuUoyDzuC4X+\r\nfAxbbEsUlkyo5PbESWfttLyyb8Bn3DLY12MlGiia06ApQTc5W6dxpJXRLuxtkJmN\r\neoh9u9JcaOYl9ijV9FXngBRsRr+lio0LVFn+WUYnozZNPDrxGch5/EZmM2lDZzeX\r\nzMhktrbaAuUZOuJ4f4IREpkeNwK6ggsC6fgcvYI+pHCsyxUZRWWf7S3co5XHZvlA\r\nlNOJ9AVSvpyAC10kkNI/7deqqX5zqt2710J0ayKNZfmaSk3QLY/2UCBQGCSNXfao\r\ncDH5VAhfNEBd\r\n-----END CERTIFICATE-----\r\n"
+  - name: WebAppyIP
     strategy: ip
     enabled_clients:
-      - auth0-deploy-cli-extension
-      - auth0-github-deploy
-      - Montage
-      - Default App
+      - SPAwithEmbeddedLock
+      - Identity Labs - Web App
+      - DesktopApp
+      - DashboardAdmin
+      - WebAppLockWidget
+      - Sysmex SPA
+      - MachinetoMachineApp
+      - My App
+      - ' Organizer Service (Test Application)'
+      - Expenses API (Test Application)
+      - auth0-account-link
+      - MobileApp
+      - WebAppDotNetCore20
+      - WebAppindotnet
+      - MFAAPIPOC
+      - MySharepointApp
+      - auth0-delegated-admin
+      - MFAROPG (Test Application)
+      - IdentityLabsMobile
+      - auth0-sso-dashboard
     is_domain_connection: false
     options:
       domain_aliases: []
       tenant_domain: null
       range:
         - 24.17.197.130/32
-        - 172.25.1.60/32
-      username: ipuser
+        - 207.108.219.2/32
+      username: psteam
+  - name: email
+    strategy: email
+    enabled_clients: []
+    is_domain_connection: false
+    options:
+      disable_signup: false
+      name: email
+      email:
+        syntax: liquid
+        from: '{{ application.name }} <omar.abdullah@auth0.com>'
+        subject: 'Welcome to {{ application.name }}'
+        body: >
+          <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+          <html xmlns="http://www.w3.org/1999/xhtml">
+            <head>
+              <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+              <style type="text/css">.ExternalClass,.ExternalClass div,.ExternalClass font,.ExternalClass p,.ExternalClass span,.ExternalClass td,img{line-height:100%}#outlook a{padding:0}.ExternalClass,.ReadMsgBody{width:100%}a,blockquote,body,li,p,table,td{-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%}table,td{mso-table-lspace:0;mso-table-rspace:0}img{-ms-interpolation-mode:bicubic;border:0;height:auto;outline:0;text-decoration:none}table{border-collapse:collapse!important}#bodyCell,#bodyTable,body{height:100%!important;margin:0;padding:0;font-family:ProximaNova,sans-serif}#bodyCell{padding:20px}#bodyTable{width:600px}@font-face{font-family:ProximaNova;src:url(https://cdn.auth0.com/fonts/proxima-nova/proximanova-regular-webfont-webfont.eot);src:url(https://cdn.auth0.com/fonts/proxima-nova/proximanova-regular-webfont-webfont.eot?#iefix) format('embedded-opentype'),url(https://cdn.auth0.com/fonts/proxima-nova/proximanova-regular-webfont-webfont.woff) format('woff');font-weight:400;font-style:normal}@font-face{font-family:ProximaNova;src:url(https://cdn.auth0.com/fonts/proxima-nova/proximanova-semibold-webfont-webfont.eot);src:url(https://cdn.auth0.com/fonts/proxima-nova/proximanova-semibold-webfont-webfont.eot?#iefix) format('embedded-opentype'),url(https://cdn.auth0.com/fonts/proxima-nova/proximanova-semibold-webfont-webfont.woff) format('woff');font-weight:600;font-style:normal}@media only screen and (max-width:480px){#bodyTable,body{width:100%!important}a,blockquote,body,li,p,table,td{-webkit-text-size-adjust:none!important}body{min-width:100%!important}#bodyTable{max-width:600px!important}#signIn{max-width:280px!important}}
+          </style>
+            </head>
+            <body leftmargin="0" marginwidth="0" topmargin="0" marginheight="0" offset="0" style="-webkit-text-size-adjust: 100%;-ms-text-size-adjust: 100%;margin: 0;padding: 0;font-family: &quot;ProximaNova&quot;, sans-serif;height: 100% !important;"><center>
+            <table style="width: 600px;-webkit-text-size-adjust: 100%;-ms-text-size-adjust: 100%;mso-table-lspace: 0pt;mso-table-rspace: 0pt;margin: 0;padding: 0;font-family: &quot;ProximaNova&quot;, sans-serif;border-collapse: collapse !important;height: 100% !important;" align="center" border="0" cellpadding="0" cellspacing="0" height="100%" width="100%" id="bodyTable">
+              <tr>
+                <td align="center" valign="top" id="bodyCell" style="-webkit-text-size-adjust: 100%;-ms-text-size-adjust: 100%;mso-table-lspace: 0pt;mso-table-rspace: 0pt;margin: 0;padding: 20px;font-family: &quot;ProximaNova&quot;, sans-serif;height: 100% !important;">
+                <div class="main">
+                  <p style="text-align: center;-webkit-text-size-adjust: 100%;-ms-text-size-adjust: 100%; margin-bottom: 30px;">
+                    <img src="https://cdn.auth0.com/styleguide/2.0.9/lib/logos/img/badge.png" width="50" alt="Your logo goes here" style="-ms-interpolation-mode: bicubic;border: 0;height: auto;line-height: 100%;outline: none;text-decoration: none;">
+                  </p>
+                  
+                  <!-- Email change content -->
+                  {% if operation == 'change_email' %}
+
+                    <p style="font-size: 1.2em;line-height: 1.3;-webkit-text-size-adjust: 100%;-ms-text-size-adjust: 100%;">Your email address has been updated.</p>
+
+                  {% else %}
+
+                    <!-- Signup email content -->
+                    {% if send == 'link' or send == 'link_ios' or send == 'link_android' %}
+
+                      <p style="font-size: 1.2em;line-height: 1.3;-webkit-text-size-adjust: 100%;-ms-text-size-adjust: 100%;">Click and confirm that you want to sign in to {{ application.name }}. This link will expire in five minutes.</p>
+
+                      <div style="text-align:center">
+                      <a id="signIn" style="text-transform: uppercase;letter-spacing: 1px;color: #ffffff;text-decoration: none;display: inline-block;min-height: 48px;line-height: 48px;padding-top: 0;padding-right: 26px;padding-bottom: 0;margin: 20px 0;padding-left: 26px;border: 0;outline: 0;background: #eb5424;font-size: 14px;font-style: normal;font-weight: 400;text-align: center;white-space: nowrap;border-radius: 3px;text-overflow: ellipsis;max-width: 280px;overflow: hidden;-webkit-text-size-adjust: 100%;-ms-text-size-adjust: 100%;" href="{{ link }}">Sign in to {{ application.name }}</a>
+                      </div>
+
+                      <p style="-webkit-text-size-adjust: 100%;-ms-text-size-adjust: 100%;">Or sign in using this link:</p>
+                      <p style="-webkit-text-size-adjust: 100%;-ms-text-size-adjust: 100%;"><a style="font-size: 12px; color: #A9B3BC; text-decoration: none;word-break: break-all;-webkit-text-size-adjust: 100%;-ms-text-size-adjust: 100%;" href="{{ link }}">{{ link }}</a></p>
+
+                      {% elsif send == 'code' %}
+
+                      <p style="font-size: 1.4em; line-height: 1.3;">Your verification code is: <b>{{ code }}</b></p>
+
+                    {% endif %}
+
+                  {% endif %}
+
+                  <p style="-webkit-text-size-adjust: 100%;-ms-text-size-adjust: 100%;">If you are having any issues with your account, please don't hesitate to contact us by replying to this mail.</p>
+
+                  <br>
+                  Thanks!
+                  <br>
+
+                  <strong>{{ application.name }}</strong>
+
+                  <br><br>
+                  <hr style="border: 2px solid #EAEEF3; border-bottom: 0; margin: 20px 0;">
+                  <p style="text-align: center;color: #A9B3BC;-webkit-text-size-adjust: 100%;-ms-text-size-adjust: 100%;">
+                    If you did not make this request, please contact us by replying to this mail.
+                  </p>
+                </div>
+                </td>
+              </tr>
+            </table>
+          </center>
+
+          </body>
+
+          </html>
+      authParams: ''
+      totp:
+        time_step: 300
+        length: 6
+      brute_force_protection: true
+  - name: fitbit
+    strategy: oauth2
+    enabled_clients:
+      - SalesforceIntegration
+      - SPAwithEmbeddedLock
+      - API Explorer Application
+      - Identity Labs - Web App
+      - DesktopApp
+      - OmarSPA
+      - DashboardAdmin
+      - WebAppLockWidget
+      - Account Linking SPA
+      - WebAppy
+      - SalesForceApplication3rdParty
+      - SCIM20toAuth0 (Test Application)
+      - Sysmex SPA
+      - MachinetoMachineApp
+      - My App
+      - auth0-authz
+      - ' Organizer Service (Test Application)'
+      - Default App
+      - Expenses API (Test Application)
+      - auth0-account-link
+      - Sysmex Web Application
+      - MobileApp
+      - WebAppDotNetCore20
+      - WebAppindotnet
+      - MFAAPIPOC
+      - Users Dashboard
+      - MySharepointApp
+      - auth0-delegated-admin
+      - MFAROPG (Test Application)
+      - IdentityLabsMobile
+      - auth0-sso-dashboard
+      - SPAwithSingleLogicalAPI
+    is_domain_connection: false
+    options:
+      authorizationURL: 'https://www.fitbit.com/oauth2/authorize'
+      tokenURL: 'https://api.fitbit.com/oauth2/token'
+      scope: >-
+        activity heartrate location nutrition profile settings sleep social
+        weight
+      scripts:
+        fetchUserProfile: |-
+          function(accessToken, ctx, cb) {
+
+            request.get('https://api.fitbit.com/1/user/-/profile.json', {
+                headers: {
+
+                  'Authorization': 'Bearer ' + accessToken
+                }
+              }
+
+              ,
+              function(err, r, body) {
+                if (err) {
+                  return cb(err);
+                }
+                try {
+                  var profile = JSON.parse(body);
+                  profile.provider = 'fitbit';
+                  profile.id = profile.user.encodedId;
+                  profile.displayName = profile.user.displayName;
+                  profile.name = profile.user.fullName;
+                  cb(null, profile);
+                } catch (e) {
+                  cb(e);
+                }
+              });
+
+
+          }
+      client_id: ''
+      client_secret: ''
   - name: google-oauth2
     strategy: google-oauth2
     enabled_clients:
-      - auth0-deploy-cli-extension
-      - auth0-github-deploy
-      - Mulesoft API (Test Application)
-      - Office365ForDemo
+      - SPAwithEmbeddedLock
+      - API Explorer Application
+      - Identity Labs - Web App
+      - DesktopApp
+      - DashboardAdmin
+      - WebAppLockWidget
+      - Account Linking SPA
+      - WebAppy
+      - SCIM20toAuth0 (Test Application)
+      - Sysmex SPA
+      - MachinetoMachineApp
+      - My App
+      - auth0-authz
+      - ' Organizer Service (Test Application)'
+      - Default App
+      - Expenses API (Test Application)
+      - auth0-account-link
+      - MobileApp
+      - WebAppDotNetCore20
+      - WebAppindotnet
+      - MFAAPIPOC
+      - MySharepointApp
+      - auth0-delegated-admin
+      - MFAROPG (Test Application)
+      - IdentityLabsMobile
+      - auth0-sso-dashboard
     is_domain_connection: false
     options:
       email: true
@@ -303,15 +1763,401 @@ connections:
       webmaster_tools: false
       coordinate: false
       coordinate_readonly: false
+  - name: twitter
+    strategy: twitter
+    enabled_clients:
+      - SPAwithEmbeddedLock
+      - API Explorer Application
+      - Identity Labs - Web App
+      - DesktopApp
+      - DashboardAdmin
+      - WebAppLockWidget
+      - Account Linking SPA
+      - WebAppy
+      - SCIM20toAuth0 (Test Application)
+      - Sysmex SPA
+      - MachinetoMachineApp
+      - My App
+      - auth0-authz
+      - ' Organizer Service (Test Application)'
+      - Default App
+      - Expenses API (Test Application)
+      - auth0-account-link
+      - Sysmex Web Application
+      - MobileApp
+      - WebAppDotNetCore20
+      - WebAppindotnet
+      - MFAAPIPOC
+      - MySharepointApp
+      - auth0-delegated-admin
+      - MFAROPG (Test Application)
+      - IdentityLabsMobile
+      - auth0-sso-dashboard
+    is_domain_connection: false
+    options:
+      client_id: ''
+      profile: true
 rulesConfigs: []
-emailProvider: {}
-emailTemplates: []
+emailProvider:
+  name: sendgrid
+  credentials:
+    api_key: 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
+  default_from_address: OmarSPA<admin@omarspa.auth0.com>
+  enabled: true
+emailTemplates:
+  - template: reset_email
+    body: ./emailTemplates/reset_email.html
+    enabled: true
+    from: >-
+      {{ application.client_metadata.sender }} {{ application.name }}
+      <support@myapp.com>
+    resultUrl: ' {% case application.name %} {% when ''WebAppy''  %} https://auth0.com/{{ user.user_metadata.returnURI }} {% when ''OmarSPA'' %} https://github.com/ {% else %} https://jwt.io/ {% endcase %}'
+    subject: Reset your password
+    syntax: liquid
+    urlLifetimeInSeconds: 432000
+  - template: verify_email
+    body: ./emailTemplates/verify_email.html
+    enabled: true
+    from: '{{ application.name }}<support@myapp.com>'
+    resultUrl: 'http://localhost:5000'
+    subject: OmarSPA invites you to verify your email
+    syntax: liquid
+    urlLifetimeInSeconds: 432000
+  - template: welcome_email
+    body: ./emailTemplates/welcome_email.html
+    enabled: true
+    from: ''
+    subject: ''
+    syntax: liquid
 clientGrants:
-  - client_id: Mulesoft API (Test Application)
-    audience: 'https://mulesoftpai.com'
+  - client_id: ' Organizer Service (Test Application)'
+    audience: organize
     scope: []
+  - client_id: API Explorer Application
+    audience: 'https://omarmodern.auth0.com/api/v2/'
+    scope:
+      - 'read:client_grants'
+      - 'create:client_grants'
+      - 'delete:client_grants'
+      - 'update:client_grants'
+      - 'read:users'
+      - 'update:users'
+      - 'delete:users'
+      - 'create:users'
+      - 'read:users_app_metadata'
+      - 'update:users_app_metadata'
+      - 'delete:users_app_metadata'
+      - 'create:users_app_metadata'
+      - 'create:user_tickets'
+      - 'read:clients'
+      - 'update:clients'
+      - 'delete:clients'
+      - 'create:clients'
+      - 'read:client_keys'
+      - 'update:client_keys'
+      - 'delete:client_keys'
+      - 'create:client_keys'
+      - 'read:connections'
+      - 'update:connections'
+      - 'delete:connections'
+      - 'create:connections'
+      - 'read:resource_servers'
+      - 'update:resource_servers'
+      - 'delete:resource_servers'
+      - 'create:resource_servers'
+      - 'read:device_credentials'
+      - 'update:device_credentials'
+      - 'delete:device_credentials'
+      - 'create:device_credentials'
+      - 'read:rules'
+      - 'update:rules'
+      - 'delete:rules'
+      - 'create:rules'
+      - 'read:rules_configs'
+      - 'update:rules_configs'
+      - 'delete:rules_configs'
+      - 'read:email_provider'
+      - 'update:email_provider'
+      - 'delete:email_provider'
+      - 'create:email_provider'
+      - 'blacklist:tokens'
+      - 'read:stats'
+      - 'read:tenant_settings'
+      - 'update:tenant_settings'
+      - 'read:logs'
+      - 'read:shields'
+      - 'create:shields'
+      - 'delete:shields'
+      - 'update:triggers'
+      - 'read:triggers'
+      - 'read:grants'
+      - 'delete:grants'
+      - 'read:guardian_factors'
+      - 'update:guardian_factors'
+      - 'read:guardian_enrollments'
+      - 'delete:guardian_enrollments'
+      - 'create:guardian_enrollment_tickets'
+      - 'read:user_idp_tokens'
+      - 'create:passwords_checking_job'
+      - 'delete:passwords_checking_job'
+      - 'read:custom_domains'
+      - 'delete:custom_domains'
+      - 'create:custom_domains'
+      - 'read:email_templates'
+      - 'create:email_templates'
+      - 'update:email_templates'
+  - client_id: AuthZExtensionapp
+    audience: 'urn:auth0-authz-api'
+    scope:
+      - 'read:users'
+      - 'read:applications'
+      - 'read:connections'
+      - 'read:configuration'
+      - 'update:configuration'
+      - 'read:groups'
+      - 'create:groups'
+      - 'update:groups'
+      - 'delete:groups'
+      - 'read:roles'
+      - 'create:roles'
+      - 'update:roles'
+      - 'delete:roles'
+      - 'read:permissions'
+      - 'create:permissions'
+      - 'update:permissions'
+      - 'delete:permissions'
+      - 'read:resource-server'
+      - 'create:resource-server'
+      - 'update:resource-server'
+      - 'delete:resource-server'
+  - client_id: Expenses API (Test Application)
+    audience: 'https://expenses-api'
+    scope: []
+  - client_id: MFAAPIPOC
+    audience: 'https://omarmodern.auth0.com/api/v2/'
+    scope:
+      - 'read:client_grants'
+      - 'create:client_grants'
+      - 'delete:client_grants'
+      - 'update:client_grants'
+      - 'read:users'
+      - 'update:users'
+      - 'delete:users'
+      - 'create:users'
+      - 'read:users_app_metadata'
+      - 'update:users_app_metadata'
+      - 'delete:users_app_metadata'
+      - 'create:users_app_metadata'
+      - 'create:user_tickets'
+      - 'read:clients'
+      - 'update:clients'
+      - 'delete:clients'
+      - 'create:clients'
+      - 'read:client_keys'
+      - 'update:client_keys'
+      - 'delete:client_keys'
+      - 'create:client_keys'
+      - 'read:connections'
+      - 'update:connections'
+      - 'delete:connections'
+      - 'create:connections'
+      - 'read:resource_servers'
+      - 'update:resource_servers'
+      - 'delete:resource_servers'
+      - 'create:resource_servers'
+      - 'read:device_credentials'
+      - 'update:device_credentials'
+      - 'delete:device_credentials'
+      - 'create:device_credentials'
+      - 'read:rules'
+      - 'update:rules'
+      - 'delete:rules'
+      - 'create:rules'
+      - 'read:rules_configs'
+      - 'update:rules_configs'
+      - 'delete:rules_configs'
+      - 'read:email_provider'
+      - 'update:email_provider'
+      - 'delete:email_provider'
+      - 'create:email_provider'
+      - 'blacklist:tokens'
+      - 'read:stats'
+      - 'read:tenant_settings'
+      - 'update:tenant_settings'
+      - 'read:logs'
+      - 'read:shields'
+      - 'create:shields'
+      - 'delete:shields'
+      - 'update:triggers'
+      - 'read:triggers'
+      - 'read:grants'
+      - 'delete:grants'
+      - 'read:guardian_factors'
+      - 'update:guardian_factors'
+      - 'read:guardian_enrollments'
+      - 'delete:guardian_enrollments'
+      - 'create:guardian_enrollment_tickets'
+      - 'read:user_idp_tokens'
+      - 'create:passwords_checking_job'
+      - 'delete:passwords_checking_job'
+      - 'read:custom_domains'
+      - 'delete:custom_domains'
+      - 'create:custom_domains'
+      - 'read:email_templates'
+      - 'create:email_templates'
+      - 'update:email_templates'
+      - 'read:mfa_policies'
+      - 'update:mfa_policies'
+      - 'read:roles'
+      - 'create:roles'
+      - 'delete:roles'
+      - 'update:roles'
+  - client_id: MFAROPG (Test Application)
+    audience: 'https://mfaropg'
+    scope: []
+  - client_id: MachinetoMachineApp
+    audience: 'http://localhost:8080/scim/users'
+    scope:
+      - 'read:users'
+  - client_id: MgmtClientApp
+    audience: 'https://omarmodern.auth0.com/api/v2/'
+    scope:
+      - 'read:client_grants'
+      - 'create:client_grants'
+      - 'delete:client_grants'
+      - 'update:client_grants'
+      - 'read:users'
+      - 'update:users'
+      - 'delete:users'
+      - 'create:users'
+      - 'read:users_app_metadata'
+      - 'update:users_app_metadata'
+      - 'delete:users_app_metadata'
+      - 'create:users_app_metadata'
+      - 'create:user_tickets'
+      - 'read:clients'
+      - 'update:clients'
+      - 'delete:clients'
+      - 'create:clients'
+      - 'read:client_keys'
+      - 'update:client_keys'
+      - 'delete:client_keys'
+      - 'create:client_keys'
+      - 'read:connections'
+      - 'update:connections'
+      - 'delete:connections'
+      - 'create:connections'
+      - 'read:resource_servers'
+      - 'update:resource_servers'
+      - 'delete:resource_servers'
+      - 'create:resource_servers'
+      - 'read:device_credentials'
+      - 'update:device_credentials'
+      - 'delete:device_credentials'
+      - 'create:device_credentials'
+      - 'read:rules'
+      - 'update:rules'
+      - 'delete:rules'
+      - 'create:rules'
+      - 'read:rules_configs'
+      - 'update:rules_configs'
+      - 'delete:rules_configs'
+      - 'read:email_provider'
+      - 'update:email_provider'
+      - 'delete:email_provider'
+      - 'create:email_provider'
+      - 'blacklist:tokens'
+      - 'read:stats'
+      - 'read:tenant_settings'
+      - 'update:tenant_settings'
+      - 'read:logs'
+      - 'read:shields'
+      - 'create:shields'
+      - 'delete:shields'
+      - 'read:anomaly_blocks'
+      - 'delete:anomaly_blocks'
+      - 'update:triggers'
+      - 'read:triggers'
+      - 'read:grants'
+      - 'delete:grants'
+      - 'read:guardian_factors'
+      - 'update:guardian_factors'
+      - 'read:guardian_enrollments'
+      - 'delete:guardian_enrollments'
+      - 'create:guardian_enrollment_tickets'
+      - 'read:user_idp_tokens'
+      - 'create:passwords_checking_job'
+      - 'delete:passwords_checking_job'
+      - 'read:custom_domains'
+      - 'delete:custom_domains'
+      - 'create:custom_domains'
+      - 'read:email_templates'
+      - 'create:email_templates'
+      - 'update:email_templates'
+      - 'read:mfa_policies'
+      - 'update:mfa_policies'
+      - 'read:roles'
+      - 'create:roles'
+      - 'delete:roles'
+      - 'update:roles'
+  - client_id: SCIM20toAuth0 (Test Application)
+    audience: 'https://omarmodern.auth0.com/api/v2/'
+    scope:
+      - 'read:client_grants'
+      - 'create:client_grants'
+      - 'update:client_grants'
+  - client_id: SCIM20toAuth0 (Test Application)
+    audience: 'http://localhost:8080/scim/users'
+    scope: []
+  - client_id: WebAppy
+    audience: 'http://localhost:8080/scim/users'
+    scope:
+      - 'read:users'
+  - client_id: WebAppy
+    audience: 'https://mfaropg'
+    scope: []
+  - client_id: auth0-account-link
+    audience: 'https://omarmodern.auth0.com/api/v2/'
+    scope:
+      - 'read:connections'
+      - 'read:users'
+      - 'read:rules'
+      - 'create:rules'
+      - 'update:rules'
+      - 'delete:rules'
+      - 'delete:clients'
+  - client_id: auth0-authz
+    audience: 'https://omarmodern.auth0.com/api/v2/'
+    scope:
+      - 'read:connections'
+      - 'read:resource_servers'
+      - 'update:resource_servers'
+      - 'delete:resource_servers'
+      - 'read:clients'
+      - 'delete:clients'
+      - 'read:users'
+      - 'read:rules'
+      - 'create:rules'
+      - 'update:rules_configs'
+      - 'update:rules'
+      - 'delete:rules'
+  - client_id: auth0-delegated-admin
+    audience: 'https://omarmodern.auth0.com/api/v2/'
+    scope:
+      - 'read:clients'
+      - 'delete:clients'
+      - 'read:connections'
+      - 'read:users'
+      - 'update:users'
+      - 'delete:users'
+      - 'create:users'
+      - 'read:logs'
+      - 'read:device_credentials'
+      - 'update:device_credentials'
+      - 'delete:device_credentials'
+      - 'delete:guardian_enrollments'
   - client_id: auth0-github-deploy
-    audience: 'https://omarclassic.auth0.com/api/v2/'
+    audience: 'https://omarmodern.auth0.com/api/v2/'
     scope:
       - 'read:client_grants'
       - 'create:client_grants'
@@ -353,9 +2199,20 @@ clientGrants:
       - 'read:email_templates'
       - 'create:email_templates'
       - 'update:email_templates'
+  - client_id: auth0-sso-dashboard
+    audience: 'https://omarmodern.auth0.com/api/v2/'
+    scope:
+      - 'read:clients'
+      - 'delete:clients'
+      - 'read:connections'
+      - 'read:resource_servers'
+      - 'create:resource_servers'
+      - 'read:client_grants'
+      - 'create:client_grants'
+      - 'delete:client_grants'
 guardianFactors:
   - name: duo
-    enabled: true
+    enabled: false
   - name: email
     enabled: false
   - name: otp
@@ -364,5 +2221,16 @@ guardianFactors:
     enabled: true
   - name: sms
     enabled: true
-guardianFactorProviders: []
-guardianFactorTemplates: []
+guardianFactorProviders:
+  - name: push-notification
+    aws_access_key_id: null
+    aws_region: null
+    provider: sns
+    sns_apns_platform_application_arn: null
+    sns_gcm_platform_application_arn: null
+guardianFactorTemplates:
+  - name: sms
+    enrollment_message: >-
+      {{code}} is your verification code for {{tenant.friendly_name}}. Please
+      enter this code to verify your enrollment.
+    verification_message: '{{code}} is your verification code for {{tenant.friendly_name}}'

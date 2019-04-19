@@ -1,8 +1,8 @@
 {
-  "AUTH0_DOMAIN": "omarclassic.auth0.com",
-  "AUTH0_CLIENT_ID": "JUnICRtN2tIuGU0zwpMCMs4wpHGNBLPh",
-  "AUTH0_CLIENT_SECRET": "y3CoIK3NlmAXFHy2ZZBz8UkO5KD_204QdUQ9SXLP53VLJwbX42dBgGmO9zs6_4mK",
-  "AUTH0_KEYWORD_REPLACE_MAPPINGS": { "AUTH0_TENANT_NAME": "omarclassic.auth0.com" },
+  "AUTH0_DOMAIN": "omarmodern.auth0.com",
+  "AUTH0_CLIENT_ID": "2a08JgFHBe5E5KvbYHvCWQJQZz4nsCOG",
+  "AUTH0_CLIENT_SECRET": "rmvjDjcyZkkGzdJxtvujNj2uGqLUPqz17mx5df6GO_TYVfbwyTqUTqJ5dOMZJNza",
+  "AUTH0_KEYWORD_REPLACE_MAPPINGS": { "AUTH0_TENANT_NAME": "omarmodern.auth0.com" },
   "AUTH0_ALLOW_DELETE": false,
   "AUTH0_EXCLUDED_RULES": [ "rule-1-name" ]
 }
